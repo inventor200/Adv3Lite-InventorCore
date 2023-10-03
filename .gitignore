@@ -1,0 +1,9 @@
+misc/
+misc/*
+obj/
+obj/*
+Scripts/
+Scripts/*
+run.sh
+dtl.sh
+gameMain.t3

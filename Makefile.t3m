@@ -1,0 +1,27 @@
+## This file mostly exists so the editor knows how to handle editing the library.
+## This file (and Makefile.t3m) are not actually used during compilation,
+## because this is a library, and not a game.
+
+-I liblite
+-D LANGUAGE=english
+-D __GAME_VERSION_RELEASE_NUMBER=1
+-D __GAME_VERSION_STAGE_NUMBER=0
+-D __GAME_VERSION_STAGE_NAME='RELEASE'
+-D __GAME_VERSION_PATCH_NUMBER=0
+-Fy obj
+-Fo obj
+-FI /usr/local/share/frobtads/tads3/include
+-FL /usr/local/share/frobtads/tads3/lib
+-we
+-v
+
+##sources
+-lib system
+-lib adv3Lite/adv3Lite
+-lib ./inventorCore
+-source gameMain.t
+
+-res
+GameInfo.txt
+
+
