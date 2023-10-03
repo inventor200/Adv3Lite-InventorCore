@@ -23,9 +23,6 @@ versionInfo: GameID {
     copyingRules = '<a href="https://www.gnu.org/licenses/gpl-3.0.en.html"
         >GPLv3.0</a>'
     presentationProfile = 'Plain Text'
-    showAbout() {
-        "This is just a work-in-progress game. ";
-    }
 }
 
 startRoom: Room { 'Start Room'
