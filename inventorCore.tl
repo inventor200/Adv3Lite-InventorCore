@@ -20,6 +20,7 @@ source: zippable.t
 source: wardrobe.t
 source: inventorCoreMisc.t
 source: turnBroker.t
+source: playerTrust.t
 source: defaultHelp_bookCore.t
 source: defaultHelp_newPlayer.t
 source: defaultHelp_verbList.t

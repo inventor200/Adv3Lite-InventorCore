@@ -10,6 +10,7 @@ inventorExamineController: object {
     lastExaminedObject = nil
     showActionsOnly = nil
     hasShownObviousActions = nil
+    usingIobj = nil
 
     clkObject(obj) {
         gameTurnBroker.wasExamineAction = true;
@@ -30,8 +31,8 @@ inventorExamineController: object {
 
         """
         <<formatNote()>>
-        <i>The author has marked this game as <q>not a puzzler</q>,
-        which means that guessing the verb is unnecessary
+        The author has marked this game as <q>not a puzzler</q>,
+        which means that guessing verbs is unnecessary
         for intended play. For this reason, examining something for the
         first time will also list some possible <q>obvious actions</q>.
         \b
@@ -49,6 +50,10 @@ inventorExamineController: object {
         as this is an abbreviation for repeating your last action.
         Alternatively, some interpreters might allow you to
         press the up arrow on your keyboard to copy your previous action.
+        <<formatRemember()>>
+        This information is intended to
+        be known, so obvious actions are not hints.
+        <.p>
         """;
     }
 }
@@ -62,6 +67,14 @@ modify Thing {
     // More actions to add to the procedural/defined list
     // Usually, this is what will be added to, as it's additive-only
     extraObviousActions = nil
+    // Something there will be a tool which can be used on other stuff,
+    // so we should be able to suggest these actions as well.
+    // IMPORTANT: This is a list of strings! Examples:
+    // - 'cut (something) with (me)'
+    // - 'unlock (something) with (me)'
+    // The token "(me)" will be replaced with the name of the object, and
+    // the token "(something)" will simply be removed.
+    indirectObviousActionStrings = nil
     // Do not list take. This applies to stuff that is not meant for
     // the player to carry, even if it's technically possible.
     doNotSuggestTake = nil
@@ -73,7 +86,7 @@ modify Thing {
     // unless we examine it twice in a row.
     listedObviousActions = nil
 
-    noObviousActionsMsg = '{I} {do} not notice any obvious actions for {that dobj}. '
+    noObviousActionsMsg = '{I} {do} not notice any obvious actions for {that dobj}.'
 
     filterRemapActionTarget(remapResult) {
         if (remapResult == nil) return self;
@@ -114,6 +127,11 @@ modify Thing {
             local canPrintActions = printingOfActionsAllowed();
             local examinedTwice = nil;
 
+            if (gPlayerChar == self) {
+                // Listing obvious actions for the player seems weird.
+                canPrintActions = nil;
+            }
+
             if (canPrintActions) {
                 examinedTwice = inventorExamineController.clkObject(self);
             }
@@ -140,21 +158,7 @@ modify Thing {
                 }
             }
 
-            local printedActions = nil;
-
-            if (canPrintActions) {
-                printedActions = gOutStream.watchForOutput({:
-                    printObviousActions(examinedTwice)
-                });
-                if (!printedActions && !inventorExamineController.hasShownObviousActions) {
-                    say('<.p><i>(' + noObviousActionsMsg + ')</i>');
-                    inventorExamineController.handleObviousActionsTutorial();
-                }
-            }
-
-            if (!descDisplayed && !printedActions) {
-                say(noObviousActionsMsg);
-            }
+            printObviousActionHandler(descDisplayed, canPrintActions, examinedTwice);
 
             examined = true;
 
@@ -163,6 +167,25 @@ modify Thing {
             }
 
             "\n";
+        }
+    }
+
+    printObviousActionHandler(descDisplayed, canPrintActions, examinedTwice) {
+        local printedActions = nil;
+
+        if (canPrintActions) {
+            printedActions = gOutStream.watchForOutput({:
+                printObviousActions(examinedTwice)
+            });
+            if (!printedActions && !inventorExamineController.hasShownObviousActions) {
+                say('<.p><i>(' + noObviousActionsMsg + ')</i>');
+                inventorExamineController.handleObviousActionsTutorial();
+                printedActions = true;
+            }
+        }
+
+        if (!descDisplayed && !printedActions) {
+            say(noObviousActionsMsg);
         }
     }
 
@@ -359,17 +382,36 @@ modify Thing {
         }
 
         processedList = processedList.appendUnique(valToList(extraObviousActions));
+        local indirectList = valToList(indirectObviousActionStrings);
 
-        if (processedList.length == 0) {
+        if (processedList.length + indirectList.length == 0) {
             return;
         }
 
         local stringList = [];
+
         for (local i = 1; i <= processedList.length; i++) {
             local vp = processedList[i].getVerbPhrase1(
                 true, processedList[i].verbRule.verbPhrase, theName, nil
             ).trim().toLower();
             stringList += formatCommand(vp, longCmd);
+        }
+
+        // Don't offer to entertain the player as an indirect object
+        if (inventorExamineController.usingIobj != gPlayerChar) {
+            local somethingReplaced = '';
+            if (inventorExamineController.usingIobj != nil) {
+                somethingReplaced = inventorExamineController.usingIobj.theName + ' ';
+            }
+
+            for (local i = 1; i <= indirectList.length; i++) {
+                local item = indirectList[i].trim().toLower();
+                // Replace/Wipe (something) from the string
+                item = item.findReplace('(something) ', somethingReplaced);
+                // Use the object's name
+                item = item.findReplace('(me)', theName);
+                stringList += formatCommand(item, longCmd);
+            }
         }
 
         """

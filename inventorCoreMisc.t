@@ -16,7 +16,7 @@ DefineTAction(Lick)
 ;
 
 modify VerbRule(Inventory)
-    'i' | 'inv' | 'inventory' | ('take'|'check') 'inventory' | 'check' 'pockets':
+    'i' | 'inv' | 'inventory' | ('take'|'check') 'inventory' | ('check' ('my'|'your'|)|) 'pockets':
 ;
 
 modify Thing {
