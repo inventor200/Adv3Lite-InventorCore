@@ -20,6 +20,7 @@ gameTurnBroker: object {
     announceFreeActions = true
     revokedFreeTurn = nil
     hadNegativeOutcome = nil
+    wasExamineAction = nil
     freeTurnAlertsRemaining = 2
     freeTurnMsg = 'This was a <<free action>>!'
     freeTurnEndMsg = 'From now-on, you will only be alerted if a <<free action>> was given a cost penalty!'
@@ -74,9 +75,16 @@ gameTurnBroker: object {
         finishActionStatus(action, actionWasNegative(action));
         
         if (hadRevokedFreeAction(action)) libGlobal.totalTurns++;
+
+        if (!wasExamineAction) {
+            inventorExamineController.lastExaminedObject = nil;
+        }
         
         revokeFreeTurn = nil;
         hadNegativeOutcome = nil;
+        if (!action.ofKind(SystemAction)) {
+            wasExamineAction = nil;
+        }
     }
     
     advanceTurns(action) { }

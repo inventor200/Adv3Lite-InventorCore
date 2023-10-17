@@ -5,7 +5,6 @@
 
 defaultDisclaimerChapter: InstructionsChapter {
     name = 'A Quick Guide Disclaimer'
-    indented = true
 
     script = [
         defaultDisclaimerPage

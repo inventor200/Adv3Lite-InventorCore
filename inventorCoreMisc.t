@@ -66,7 +66,8 @@ modify Thing {
 }
 
 modify Actor {
-    dobjFor(LookIn) asDobjFor(Search)
+    noSelfHarmMsg = '{I} deserve better treatment than that. &lt;3 '
+
     dobjFor(Search) {
         verify() {
             if (gPlayerChar != self) {
@@ -82,6 +83,7 @@ modify Actor {
         }
         report() { }
     }
+    dobjFor(LookIn) asDobjFor(Search)
 
     dobjFor(LookUnder) {
         verify() { }
@@ -91,6 +93,41 @@ modify Actor {
         }
         report() { }
     }
+
+    dobjFor(Attack) {
+        verify() {
+            if (gActor == gVerifyDobj) {
+                illogical(noSelfHarmMsg);
+            }
+            else {
+                inherited();
+            }
+        }
+    }
+
+    dobjFor(AttackWith) {
+        verify() {
+            if (gActor == gVerifyDobj) {
+                illogical(noSelfHarmMsg);
+            }
+            else {
+                inherited();
+            }
+        }
+    }
+}
+
+// Do not say "reveal" if the container is see-thru
+modify openingContentsLister {
+    showListPrefix(lst, pl, parent) {
+        gMessageParams(parent);
+        if (parent.isTransparent) {
+            "Inside {the parent} <<pl ? 'are' : 'is'>> ";
+        }
+        else {
+            "Opening {the parent} {dummy} reveal{s/ed} ";
+        }
+    }
 }
 
 modify Floor {
@@ -98,7 +135,7 @@ modify Floor {
     decorationActions = (getFloorActions())
 
     getFloorActions() {
-        return [Examine, Search, LookUnder, TakeFrom];
+        return [Examine, Search, LookUnder, TakeFrom, SitOn, LieOn];
     }
 
     cannotLookUnderFloorMsg = 'It is impossible to look under <<theName>>. '
@@ -113,6 +150,17 @@ modify Floor {
             }
         }
     }
+
+    dobjFor(SitOn) {
+        verify() { }
+        check() { }
+        action() { }
+        report() {
+            "{I} {sit} on <<theName>>. ";
+        }
+    }
+
+    dobjFor(LieOn) asDobjFor(SitOn)
 }
 
 // Use if these walls are in one specific room, in particular
@@ -229,6 +277,10 @@ class Atmosphere: MultiLoc, Thing {
     isDecoration = true
     initialLocationClass = Room
     pleaseIgnoreMe = true
+
+    // Make sure that the atmosphere can always be a
+    // smell fallback.
+    forceSmellSuccess = true
     
     isInitiallyIn(obj) { return obj.atmosphereObj == self; }
     decorationActions = (getAtmosphereActions())   
@@ -244,19 +296,38 @@ defaultCeiling: Ceiling;
 
 defaultAtmosphere: Atmosphere;
 
+modify defaultGround {
+    vocab = 'the floor;;ground'
+}
+
 modify Room {
     floorObj = defaultGround
     wallsObj = defaultWalls
     ceilingObj = defaultCeiling
     atmosphereObj = defaultAtmosphere
     canLookUnderFloor = nil
+
+    // Make sure that the current room can always be a
+    // sensory fallback.
+    forceListenSuccess = true
+    forceSmellSuccess = true
+
+    searchTooVagueMsg = '{I} will have to be more specific,
+        and search specific containers instead. '
     
-    dobjFor(LookIn) asDobjFor(Search)
-    dobjFor(LookThrough) asDobjFor(Search)
+    dobjFor(LookIn) {
+        verify() {
+            illogical(searchTooVagueMsg);
+        }
+    }
+    dobjFor(LookThrough) {
+        verify() {
+            illogical(searchTooVagueMsg);
+        }
+    }
     dobjFor(Search) {
         verify() {
-            illogical('{I} will have to be more specific,
-                and search specific containers instead. ');
+            illogical(searchTooVagueMsg);
         }
     }
 

@@ -1,0 +1,11 @@
+Name: Inventor Core
+Byline: by Joey Cramsey
+HtmlByline: by <a href="mailto:josephcsoftware@gmail.com">Joey Cramsey</a>
+AuthorEmail:  josephcsoftware@gmail.com
+Desc: A standard layer on top of Adv3Lite.
+HtmlDesc: A standard layer on top of Adv3Lite.
+Version: 1.0.0 RELEASE (Patch 0)
+ReleaseDate: 2023-10-04
+LicenseType: freeware
+CopyingRules: <a href="https://www.gnu.org/licenses/gpl-3.0.en.html" >GPLv3.0</a>
+PresentationProfile: Plain Text

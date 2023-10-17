@@ -1,4 +1,5 @@
 name: The Inventor Core
+source: examineControl.t
 source: preferencesCore.t
 source: printUtilities.t
 source: gMoverCore.t

@@ -10,6 +10,86 @@
  * behaviors, and is excluded from _ ALL actions.
  */
 
+// Modify Listen to obey restrictions placed on ALL.
+modify Listen {
+	execAction(cmd) {
+        local s_list = gActor.getOutermostRoom.allContents.subset({
+            x: Q.canHear(gActor,x) && x.isProminentNoise
+        });
+        
+        s_list = s_list.getUnique();
+        
+        local r_list = getRemoteSoundList().getUnique() - s_list;
+			
+        local somethingDisplayed = nil;
+			
+        foreach (local cur in s_list) {
+            if (!cur.forceListenSuccess) {
+                if (cur.hideFromAll(self)) continue;
+            }
+			if (cur.displayAlt(&listenDesc)) {
+			    somethingDisplayed = true;
+            }
+		}
+
+        local validRemoteSounds = [];
+
+        foreach (local cur in r_list) {
+            if (!cur.forceListenSuccess) {
+                if (cur.hideFromAll(self)) continue;
+            }
+			validRemoteSounds += cur;
+		}
+		
+		if (listRemoteSounds(validRemoteSounds)) {
+			somethingDisplayed = true;
+        }
+			
+        if (!somethingDisplayed) {
+            "{I} hear{s/d} nothing out of the ordinary.<.p>";
+        }
+    }
+}
+
+// Modify Smell to obey restrictions placed on ALL.
+modify Smell {
+    execAction(cmd) {
+        local s_list = gActor.getOutermostRoom.allContents.subset({
+            x: Q.canSmell(gActor, x)  &&  x.isProminentSmell
+        });
+        
+        local r_list = getRemoteSmellList().getUnique() - s_list;
+        
+        local somethingDisplayed = nil;
+        
+        foreach (local cur in s_list) {
+            if (!cur.forceSmellSuccess) {
+                if (cur.hideFromAll(self)) continue;
+            }
+            if (cur.displayAlt(&smellDesc)) {
+                somethingDisplayed = true;
+            }
+        }
+
+        local validRemoteSmells = [];
+
+        foreach (local cur in r_list) {
+            if (!cur.forceSmellSuccess) {
+                if (cur.hideFromAll(self)) continue;
+            }
+			validRemoteSmells += cur;
+		}
+        
+        if (listRemoteSmells(validRemoteSmells)) {
+            somethingDisplayed = true;
+        }
+             
+        if (!somethingDisplayed) {
+            "{I} {smell} nothing out of the ordinary.<.p>";
+        }
+    }
+}
+
 modify Thing {
     // Only apply ALL to me if I'm in inventory
     pleaseIgnoreMe = nil
@@ -17,8 +97,20 @@ modify Thing {
     alwaysHideFromAll = (isDecoration)
     // Only allow EXAMINE ALL for me
     onlyExamineAll = (isDecoration)
+    // Always succeed for LISTEN
+    forceListenSuccess = nil
+    // Always succeed for SMELL
+    forceSmellSuccess = nil
 
     hideFromAll(action) {
+        if (action.ofKind(ListenTo) && forceListenSuccess) {
+            return nil;
+        }
+
+        if (action.ofKind(SmellSomething) && forceSmellSuccess) {
+            return nil;
+        }
+
         if (alwaysHideFromAll) {
             return true;
         }
@@ -39,6 +131,36 @@ modify Thing {
         if (isWearable && wornBy != nil) {
             return true;
         }
+
+        // Skip SubComponents
+        if (self.ofKind(SubComponent)) {
+            return true;
+        }
+
+        // Actor inventory and parts need special handling
+        local containingActor = nil;
+        if (!self.ofKind(Actor)) {
+            local simpleObj = InventorSpecial.simplifyComplexObject(self);
+            if (simpleObj != nil) {
+                if (simpleObj.location != nil) {
+                    if (simpleObj.location.ofKind(Actor)) {
+                        containingActor = simpleObj.location;
+                    }
+                }
+            }
+        }
+
+        // Skip potential body parts
+        if (containingActor != nil && isFixed) {
+            return true;
+        }
+        // Do not spy into other inventories with ALL
+        if (containingActor != gPlayerChar) {
+            return true;
+        }
+
+        // Ignore yourself
+        if (self == gPlayerChar) return true;
 
         // Simple examination is fine
         if (action.ofKind(Examine)) return nil;
@@ -61,6 +183,14 @@ modify Thing {
         // Player has full control over inventory
         return !isHeld;
     }
+}
+
+modify Noise {
+    forceListenSuccess = true
+}
+
+modify Odor {
+    forceSmellSuccess = true
 }
 
 modify SubComponent {
@@ -89,6 +219,9 @@ class Trinket: Thing {
     // Adv3 properties
     isListedInInventory = true
     isListedInContents = true
+
+    // Stuff for obvious actions
+    doNotSuggestTake = true
 
     // This check works in both Adv3 and Adv3Lite!
     hideFromAll(action) {

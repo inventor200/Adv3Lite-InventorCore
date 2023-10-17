@@ -5,6 +5,7 @@
 
 defaultVerbsChapter: InstructionsChapter {
     name = 'Index of Common Parser Verbs'
+    indented = true
 
     script = [
         defaultVerbsPage1,

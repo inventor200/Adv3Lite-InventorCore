@@ -16,6 +16,7 @@ class ChoiceGiver: object {
     context = nil
     beforeScreenReaderCertainty = nil
     nextChoiceIsIndented = nil
+    isYesNoPrompt = nil
 
     indentNextChoice() {
         nextChoiceIsIndented = true;
@@ -39,11 +40,51 @@ class ChoiceGiver: object {
             say('<.p><b>Type in your choice here:</b> ');
         }
         else {
-            say('<.p>&gt;&nbsp;');
+            say('<.p>(choice) &gt;&nbsp;');
         }
         local response = inputManager.getInputLine(nil);
         say('&nbsp;<.p>');
-        return response.trim().toUpper();
+        response = response.trim().toUpper();
+
+        if (isYesNoPrompt && !response.startsWith('*')) {
+            // Apparently some players are VERY lax with y/n
+            // prompts, so we need to handle more cases.
+            local translated = 'N';
+            switch (response) {
+                case 'YES':
+                case 'YUP':
+                case 'YEAH':
+                case 'YEA':
+                case 'YE':
+                case 'YA':
+                case 'YEE':
+                case 'YEP':
+                case 'YUS':
+                case 'YIS':
+                case 'YAS':
+                case 'ABSOLUTELY':
+                case 'AFF':
+                case 'AFFIRMATIVE':
+                case 'RIGHT':
+                case 'CORRECT':
+                case 'THAT IS RIGHT':
+                case 'THATS RIGHT':
+                case 'THAT\'S RIGHT':
+                case 'THAT IS CORRECT':
+                case 'THATS CORRECT':
+                case 'THAT\'S CORRECT':
+                case 'OUI':
+                case 'SI':
+                case 'JA':
+                case 'OF COURSE':
+                case 'SURE':
+                case 'CERTAINLY':
+                    translated = 'Y';
+            }
+            response = translated;
+        }
+
+        return response;
     }
 
     ask() {
@@ -169,6 +210,16 @@ class ChoiceGiver: object {
         do {
             lastChoice = nil;
             local reduced = showAskPrompt();
+            if (reduced.startsWith('*')) {
+                if (scriptStatus.scriptFile != nil) {
+                    "Comment recorded. ";
+                }
+                else {
+                    "Comment NOT recorded. ";
+                }
+                continue;
+            }
+
             for (local i = 1; i <= choices.length; i++) {
                 local choice = choices[i];
                 local abbreviation = choice[1];
@@ -194,6 +245,7 @@ class ChoiceGiver: object {
         );
         question.add('y', 'Yes');
         question.add('n', 'No');
+        question.isYesNoPrompt = true;
         local result = question.ask();
         return result == 1;
     }
